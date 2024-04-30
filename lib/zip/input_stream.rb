@@ -154,7 +154,15 @@ module Zip
       header = @archive_io.read(@decrypter.header_bytesize)
       @decrypter.reset!(header)
 
-      ::Zip::DecryptedIo.new(@archive_io, @decrypter)
+      compressed_size = if @decrypter.kind_of?(::Zip::AESDecrypter)
+        @current_entry.compressed_size -
+          @decrypter.header_bytesize -
+          ::Zip::AESEncryption::AUTHENTICATION_CODE_LENGTH
+      else
+        @current_entry.compressed_size
+      end
+
+      ::Zip::DecryptedIo.new(@archive_io, @decrypter, compressed_size)
     end
 
     def get_decompressor # :nodoc:
